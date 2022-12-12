@@ -2,15 +2,19 @@ import Botao from "../../componentes/botao";
 import Image from "next/image";
 import InputPublico from "../../componentes/inputPublico";
 import Link from "next/link";
+import UsuarioService from "../../services/UsuarioService";
 import { UploadImagem } from "../../componentes/uploadImagem";
 import { useState } from "react";
+import { validarEmail, validarSenha, validarNome, validarConfirmacaoSenha } from '../../utils/validadores';
 
 import imagemChave from "../../public/imagens/chave.svg";
 import imagemEnvelope from "../../public/imagens/envelope.svg";
-import imagemLogo from "../../public/imagens/logo.svg"
-import imagemUsuarioAtivo from "../../public/imagens/usuarioAtivo.svg"
-import imagemAvatar from "../../public/imagens/avatar.svg"
+import imagemLogo from "../../public/imagens/logo.svg";
+import imagemUsuarioAtivo from "../../public/imagens/usuarioAtivo.svg";
+import imagemAvatar from "../../public/imagens/avatar.svg";
 
+
+const usuarioService = new UsuarioService();
 
 export default function Cadastro() {
     
@@ -19,6 +23,46 @@ export default function Cadastro() {
     const [email, setEmail] = useState("");
     const [senha, setSenha] = useState("");
     const [confirmacaoSenha, setconfirmacaoSenha] = useState("");
+    const [estaSubmetendo, setEstaSubmetendo] = useState(false);
+
+    const validarFormulario = () => {
+        return (
+            validarNome(nome)
+            && validarEmail(email)
+            && validarSenha(senha)
+            && validarConfirmacaoSenha(senha, confirmacaoSenha)
+        );
+    }
+
+    const aoSubmeter = async (e) => {
+        e.preventDefault();
+        if(!validarFormulario()) {
+            return;
+        }
+
+        setEstaSubmetendo(true);
+
+        try{
+            const corpoReqCadastro = new FormData();
+            corpoReqCadastro.append("nome", nome);
+            corpoReqCadastro.append("email", email);
+            corpoReqCadastro.append("senha", senha);
+
+            if(imagem?.arquivo) {
+                corpoReqCadastro.append("file", imagem.arquivo);
+            }
+
+            await usuarioService.cadastro(corpoReqCadastro);
+            alert("Sucesso!");
+            // TODO: autenticar o usuario diretamente apos o cadastro
+        }catch(error){
+            alert(
+                "Erro ao cadastrar usuario." + error?.response?.data?.erro
+            );
+        }
+
+        setEstaSubmetendo(false);
+    }
     
     return (
         <section className={`paginaCadastro paginaPublica`}>
@@ -32,7 +76,7 @@ export default function Cadastro() {
             </div>
 
             <div className="conteudoPaginaPublica">
-                <form>
+                <form onSubmit={aoSubmeter}>
                     <UploadImagem
                         imagemPreviewClassName="avatar avatarPreview"
                         imagemPreview={imagem?.preview || imagemAvatar.src}
@@ -45,6 +89,8 @@ export default function Cadastro() {
                         texto="Nome Completo"
                         aoAlterarValor={e => setNome(e.target.value)}
                         valor={nome}
+                        mensagemValidacao="O nome precisa de pelo menos 2 caracteres"
+                        exibirMensagemValidacao={nome && !validarNome(nome)}
                     />
 
                     <InputPublico
@@ -53,6 +99,8 @@ export default function Cadastro() {
                         texto="E-mail"
                         aoAlterarValor={e => setEmail(e.target.value)}
                         valor={email}
+                        mensagemValidacao="O e-mail informado é inválido"
+                        exibirMensagemValidacao={email && !validarEmail(email)}
                     />
 
                     <InputPublico
@@ -61,6 +109,8 @@ export default function Cadastro() {
                         texto="Senha"
                         aoAlterarValor={e => setSenha(e.target.value)}
                         valor={senha}
+                        mensagemValidacao="Precisa de pelo menos 3 caracteres"
+                        exibirMensagemValidacao={senha && !validarSenha(senha)}
                     />
 
                     <InputPublico
@@ -69,12 +119,14 @@ export default function Cadastro() {
                         texto="Confirmar Senha"
                         aoAlterarValor={e => setconfirmacaoSenha(e.target.value)}
                         valor={confirmacaoSenha}
+                        mensagemValidacao="As senhas precisam ser iguais!"
+                        exibirMensagemValidacao={confirmacaoSenha && !validarConfirmacaoSenha(senha, confirmacaoSenha)}
                     />
 
                     <Botao
                         texto="Cadastrar"
                         tipo="submit"
-                        desabilitado={false}
+                        desabilitado={!validarFormulario() || estaSubmetendo}
                     />
                 </form>
 
