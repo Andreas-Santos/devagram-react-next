@@ -12,7 +12,7 @@ import imagemLogo from "../../public/imagens/logo.svg"
 
 const usuarioService = new UsuarioService();
 
-export default function Login() {
+export default function Login({ aposAutenticacao }) {
 
     const [email, setEmail] = useState("");
     const [senha, setSenha] = useState("");
@@ -37,7 +37,11 @@ export default function Login() {
             await usuarioService.login({
                 login: email,
                 senha: senha
-            })
+            });
+
+            if (aposAutenticacao) {
+                aposAutenticacao();
+            }
 
             // TODO: redirecionar o usuario para a home
         }catch(error){
